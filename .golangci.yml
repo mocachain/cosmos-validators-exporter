@@ -11,6 +11,11 @@ linters:
     - funlen
     - gocognit
     - gocyclo
+    # goconst flags Prometheus label keys ("chain", "address", "provider"
+    # etc.) reused across many generators as "make these constants". Each
+    # generator legitimately names its own labels — extracting to a shared
+    # constants package hurts readability without buying anything.
+    - goconst
     - gomoddirectives
     - gosec
     - ireturn
@@ -25,6 +30,10 @@ linters:
     - varnamelen
     - wrapcheck
     - wsl
+    # wsl_v5 (whitespace linter v5) flags missing blank lines around
+    # certain statements. Stylistic preference; not actionable for this
+    # fork's scope.
+    - wsl_v5
     - staticcheck
     - noinlineerr
   settings:
