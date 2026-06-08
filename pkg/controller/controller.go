@@ -55,6 +55,24 @@ func (c *Controller) Fetch(ctx context.Context) (
 
 	processFetcher := func(fetcher fetchersPkg.Fetcher) {
 		defer wg.Done()
+		// Recover panics from individual fetchers so one bad fetcher
+		// (e.g. an Int64 overflow on a chain with 18-decimal precision,
+		// or any other runtime panic deep in the cosmos-sdk types) doesn't
+		// take down the entire process. Without this, the goroutine panic
+		// propagates to the runtime and exits the container with code 2.
+		// We still mark the fetcher as done so the outer loop doesn't
+		// hang waiting for it.
+		defer func() {
+			if r := recover(); r != nil {
+				c.Logger.Error().
+					Interface("panic", r).
+					Str("name", string(fetcher.Name())).
+					Msg("Fetcher panicked — recovered to keep the process alive")
+				mutex.Lock()
+				fetchersStatus[fetcher.Name()] = true
+				mutex.Unlock()
+			}
+		}()
 
 		c.Logger.Trace().Str("name", string(fetcher.Name())).Msg("Processing fetcher...")
 
