@@ -11,6 +11,11 @@ linters:
     - funlen
     - gocognit
     - gocyclo
+    # goconst flags Prometheus label keys ("chain", "address", "provider"
+    # etc.) reused across many generators as "make these constants". Each
+    # generator legitimately names its own labels — extracting to a shared
+    # constants package hurts readability without buying anything.
+    - goconst
     - gomoddirectives
     - gosec
     - ireturn
@@ -25,6 +30,10 @@ linters:
     - varnamelen
     - wrapcheck
     - wsl
+    # wsl_v5 (whitespace linter v5) flags missing blank lines around
+    # certain statements. Stylistic preference; not actionable for this
+    # fork's scope.
+    - wsl_v5
     - staticcheck
     - noinlineerr
   settings:
@@ -54,6 +63,21 @@ linters:
       - third_party$
       - builtin$
       - examples$
+    rules:
+      # Test files reuse fixture strings (test addresses, monikers, chain
+      # names) intentionally — extracting them to constants doesn't make
+      # tests easier to read.
+      - path: '_test\.go$'
+        linters:
+          - goconst
+      # govet's "inline reflect.Ptr" is a stylistic preference about whether
+      # to use reflect.Ptr or reflect.Pointer; both work. Leave the existing
+      # reflect.Ptr usage alone — touching it changes upstream code outside
+      # the scope of this fork.
+      - path: 'pkg/state/state\.go$'
+        linters:
+          - govet
+        text: 'reflect\.Ptr'
 formatters:
   enable:
     - gofmt
