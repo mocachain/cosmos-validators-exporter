@@ -2,9 +2,11 @@ package utils
 
 import (
 	"bytes"
+	"encoding/hex"
 	"main/pkg/constants"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/tnakagawa/goref/bech32m"
 )
@@ -27,6 +29,15 @@ func StrToFloat64(s string) float64 {
 }
 
 func ChangeBech32Prefix(source, newPrefix string) (string, error) {
+	// For EVM-style Cosmos chains the validator operator, wallet account, and
+	// consensus identifier are all the same 20-byte 0x-prefixed hex string —
+	// there is no separate bech32 prefix to swap. Return the source unchanged
+	// so downstream lookups (wallet balance, rewards, signing info) receive a
+	// usable address.
+	if isEVMAddress(source) {
+		return source, nil
+	}
+
 	_, bytes, _, err := bech32m.Decode(source)
 	if err != nil {
 		return "", err
@@ -77,7 +88,27 @@ func FindIndex[T any](slice []T, predicate func(T) bool) (int, bool) {
 	return 0, false
 }
 
+// isEVMAddress reports whether s looks like a 0x-prefixed 20-byte hex string
+// (an Ethereum-style account address). EVM-based Cosmos chains such as Moca,
+// Evmos, and Berachain expose validator operator addresses in this form
+// instead of the cosmosvaloper1... bech32 form, so bech32m.Decode can never
+// succeed on them — they contain characters outside the bech32 alphabet
+// regardless of case, and EIP-55 checksumming requires mixed case.
+func isEVMAddress(s string) bool {
+	if len(s) != 42 || !strings.HasPrefix(s, "0x") {
+		return false
+	}
+
+	_, err := hex.DecodeString(s[2:])
+
+	return err == nil
+}
+
 func CompareTwoBech32(first, second string) (bool, error) {
+	if isEVMAddress(first) && isEVMAddress(second) {
+		return strings.EqualFold(first, second), nil
+	}
+
 	_, firstBytes, _, err := bech32m.Decode(first)
 	if err != nil {
 		return false, err

@@ -49,6 +49,40 @@ func TestCompareTwoBech32SecondNotEqual(t *testing.T) {
 	assert.False(t, equal, "Bech addresses should not be equal!")
 }
 
+func TestCompareTwoBech32EVMEqualSameCase(t *testing.T) {
+	t.Parallel()
+
+	equal, err := CompareTwoBech32(
+		"0xc999843a18beA108093D333d7AE73E606456F6Bb",
+		"0xc999843a18beA108093D333d7AE73E606456F6Bb",
+	)
+	require.NoError(t, err, "EVM addresses should not error")
+	assert.True(t, equal, "Identical EVM addresses should compare equal")
+}
+
+func TestCompareTwoBech32EVMEqualDifferentCase(t *testing.T) {
+	t.Parallel()
+
+	// EIP-55 checksum vs all-lowercase form of the same 20-byte address.
+	equal, err := CompareTwoBech32(
+		"0xc999843a18beA108093D333d7AE73E606456F6Bb",
+		"0xc999843a18bea108093d333d7ae73e606456f6bb",
+	)
+	require.NoError(t, err, "EVM addresses should not error on mixed case")
+	assert.True(t, equal, "Same EVM address in different case should compare equal")
+}
+
+func TestCompareTwoBech32EVMNotEqual(t *testing.T) {
+	t.Parallel()
+
+	equal, err := CompareTwoBech32(
+		"0xc999843a18beA108093D333d7AE73E606456F6Bb",
+		"0x6B3Ce963cF49AA90e544f5F447A9dB8D0600Bd6E",
+	)
+	require.NoError(t, err, "EVM addresses should not error")
+	assert.False(t, equal, "Different EVM addresses should not compare equal")
+}
+
 func TestBoolToFloat64(t *testing.T) {
 	t.Parallel()
 	assert.InDelta(t, float64(1), BoolToFloat64(true), 0.001)
@@ -145,6 +179,17 @@ func TestChangeBech32Prefix(t *testing.T) {
 	value, err := ChangeBech32Prefix("cosmos1xqz9pemz5e5zycaa89kys5aw6m8rhgsvtp9lt2", "cosmosvaloper")
 	require.NoError(t, err)
 	require.Equal(t, "cosmosvaloper1xqz9pemz5e5zycaa89kys5aw6m8rhgsvw4328e", value)
+}
+
+func TestChangeBech32PrefixEVMReturnsSource(t *testing.T) {
+	t.Parallel()
+
+	// For EVM chains the validator operator IS the wallet/consensus account,
+	// so a "prefix change" should be a no-op returning the source address.
+	addr := "0xc999843a18beA108093D333d7AE73E606456F6Bb"
+	value, err := ChangeBech32Prefix(addr, "moca")
+	require.NoError(t, err, "EVM addresses should not error")
+	assert.Equal(t, addr, value, "EVM address should be returned unchanged")
 }
 
 func TestGetBlockFromHeaderNoValue(t *testing.T) {
