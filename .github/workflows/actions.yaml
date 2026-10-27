@@ -40,7 +40,8 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
       - name: Run tests
-        run: go test -coverpkg=./... -coverprofile coverage.txt -v ./...
+        # -race makes a data race between fetcher workers fail the run.
+        run: go test -race -coverpkg=./... -coverprofile coverage.txt -v ./...
       # Upstream uploads coverage to QuokkaStake's Codecov project. This
       # fork has no Codecov integration. Dropping the step also avoids
       # transient codecov uploader failures (gpg verify EPIPE / 5xx)

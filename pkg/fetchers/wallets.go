@@ -19,12 +19,6 @@ type WalletsFetcher struct {
 	Chains []*config.Chain
 	RPCs   map[string]*tendermint.RPCWithConsumers
 	Tracer trace.Tracer
-
-	wg    sync.WaitGroup
-	mutex sync.Mutex
-
-	queryInfos []*types.QueryInfo
-	allWallets map[string]map[string]*WalletInfo
 }
 
 type WalletInfo struct {
@@ -62,16 +56,24 @@ func (q *WalletsFetcher) Name() constants.FetcherName {
 	return constants.FetcherNameWallets
 }
 
+// Fetch keeps its state local, so scrapes that overlap do not share it.
 func (q *WalletsFetcher) Fetch(
 	ctx context.Context,
 	data ...any,
 ) (any, []*types.QueryInfo) {
-	q.queryInfos = []*types.QueryInfo{}
-	q.allWallets = map[string]map[string]*WalletInfo{}
+	var (
+		wg    sync.WaitGroup
+		mutex sync.Mutex
+	)
+
+	queryInfos := []*types.QueryInfo{}
+	allWallets := make(map[string]map[string]*WalletInfo, len(q.Chains))
 
 	for _, chain := range q.Chains {
-		q.allWallets[chain.Name] = map[string]*WalletInfo{}
+		allWallets[chain.Name] = map[string]*WalletInfo{}
+	}
 
+	for _, chain := range q.Chains {
 		if !chain.Queries.Enabled("wallets") {
 			continue
 		}
@@ -79,82 +81,76 @@ func (q *WalletsFetcher) Fetch(
 		rpc := q.RPCs[chain.Name].RPC
 
 		for _, wallet := range chain.Wallets {
-			q.wg.Add(1)
+			info := &WalletInfo{}
+			allWallets[chain.Name][wallet.Address] = info
 
-			go q.processWallet(ctx, chain.Name, wallet.Address, rpc)
+			// record keeps a query's info and reports whether it succeeded.
+			record := func(what string) func(*types.QueryInfo, error) bool {
+				return func(query *types.QueryInfo, err error) bool {
+					mutex.Lock()
+					defer mutex.Unlock()
+
+					if query != nil {
+						queryInfos = append(queryInfos, query)
+					}
+
+					if err != nil {
+						q.Logger.Error().
+							Err(err).
+							Str("chain", chain.Name).
+							Str("wallet", wallet.Address).
+							Msg("Error querying for wallet " + what)
+
+						return false
+					}
+
+					return true
+				}
+			}
+
+			runQuery(ctx, &wg, wallet.Address, rpc.GetWalletBalances, record("balance"), func(balances []types.Amount) {
+				// The bank API leaves out zero coins. Report 0 of the base
+				// denom, so an empty wallet still shows up.
+				if len(balances) == 0 {
+					balances = []types.Amount{{Denom: chain.BaseDenom}}
+				}
+
+				info.Balances = balances
+			})
+			runQuery(ctx, &wg, wallet.Address, rpc.GetWalletDelegations, record("delegations"), func(delegations []types.WalletDelegation) {
+				info.Delegations = delegations
+			})
+			runQuery(ctx, &wg, wallet.Address, rpc.GetWalletUnbondings, record("unbondings"), func(unbondings []types.WalletUnbonding) {
+				info.Unbondings = unbondings
+			})
+			runQuery(ctx, &wg, wallet.Address, rpc.GetWalletRedelegations, record("redelegations"), func(redelegations []types.WalletRedelegation) {
+				info.Redelegations = redelegations
+			})
+			runQuery(ctx, &wg, wallet.Address, rpc.GetWalletRewards, record("rewards"), func(rewards []types.WalletReward) {
+				info.Rewards = rewards
+			})
 		}
 	}
 
-	q.wg.Wait()
+	wg.Wait()
 
-	return WalletsData{Wallets: q.allWallets}, q.queryInfos
+	return WalletsData{Wallets: allWallets}, queryInfos
 }
 
-func (q *WalletsFetcher) processWallet(
+// runQuery runs one of a wallet's queries in its own goroutine and hands the
+// result to store if the query succeeds.
+func runQuery[T any](
 	ctx context.Context,
-	chainName string,
+	wg *sync.WaitGroup,
 	wallet string,
-	rpc *tendermint.RPC,
+	query func(string, context.Context) (T, *types.QueryInfo, error),
+	record func(*types.QueryInfo, error) bool,
+	store func(T),
 ) {
-	defer q.wg.Done()
-
-	info := &WalletInfo{}
-
-	balances, query, err := rpc.GetWalletBalance(wallet, ctx)
-	if q.record(chainName, wallet, "balance", query, err) {
-		info.Balances = balances
-	}
-
-	delegations, query, err := rpc.GetWalletDelegations(wallet, ctx)
-	if q.record(chainName, wallet, "delegations", query, err) {
-		info.Delegations = delegations
-	}
-
-	unbondings, query, err := rpc.GetWalletUnbondings(wallet, ctx)
-	if q.record(chainName, wallet, "unbondings", query, err) {
-		info.Unbondings = unbondings
-	}
-
-	redelegations, query, err := rpc.GetWalletRedelegations(wallet, ctx)
-	if q.record(chainName, wallet, "redelegations", query, err) {
-		info.Redelegations = redelegations
-	}
-
-	rewards, query, err := rpc.GetWalletRewards(wallet, ctx)
-	if q.record(chainName, wallet, "rewards", query, err) {
-		info.Rewards = rewards
-	}
-
-	q.mutex.Lock()
-	defer q.mutex.Unlock()
-
-	q.allWallets[chainName][wallet] = info
-}
-
-// record keeps a query's info and reports whether the query succeeded.
-func (q *WalletsFetcher) record(
-	chainName string,
-	wallet string,
-	what string,
-	query *types.QueryInfo,
-	err error,
-) bool {
-	q.mutex.Lock()
-	defer q.mutex.Unlock()
-
-	if query != nil {
-		q.queryInfos = append(q.queryInfos, query)
-	}
-
-	if err != nil {
-		q.Logger.Error().
-			Err(err).
-			Str("chain", chainName).
-			Str("wallet", wallet).
-			Msg("Error querying for wallet " + what)
-
-		return false
-	}
-
-	return true
+	wg.Go(func() {
+		result, info, err := query(wallet, ctx)
+		if record(info, err) {
+			store(result)
+		}
+	})
 }

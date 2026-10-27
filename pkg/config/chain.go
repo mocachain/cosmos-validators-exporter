@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/guregu/null/v5"
 )
@@ -57,11 +58,21 @@ func (c *Chain) Validate() error {
 		}
 	}
 
+	// A wallet listed twice would export its series twice, under two names.
+	addresses := map[string]bool{}
+
 	for index, wallet := range c.Wallets {
 		err := wallet.Validate()
 		if err != nil {
 			return fmt.Errorf("error in wallet #%d: %s", index, err)
 		}
+
+		address := strings.ToLower(wallet.Address)
+		if addresses[address] {
+			return fmt.Errorf("error in wallet #%d: %s is listed twice", index, wallet.Address)
+		}
+
+		addresses[address] = true
 	}
 
 	for index, denomInfo := range c.Denoms {

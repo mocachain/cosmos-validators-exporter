@@ -372,9 +372,31 @@ func (rpc *RPC) GetWalletBalance(
 	}), &info, nil
 }
 
-// GetWalletDelegations, GetWalletUnbondings, GetWalletRedelegations and
-// GetWalletRewards serve WalletsFetcher, which skips chains whose "wallets"
-// query is disabled. They read the first page of up to 100 entries.
+// GetWalletBalances, GetWalletDelegations, GetWalletUnbondings,
+// GetWalletRedelegations and GetWalletRewards serve WalletsFetcher, which
+// skips chains whose "wallets" query is disabled. Unlike GetWalletBalance,
+// they do not follow the "balance" query. They read the first page of up to
+// 100 entries.
+func (rpc *RPC) GetWalletBalances(
+	wallet string,
+	ctx context.Context,
+) ([]types.Amount, *types.QueryInfo, error) {
+	var response types.BalancesResponse
+
+	info, err := rpc.getWalletData(
+		"balances",
+		"%s/cosmos/bank/v1beta1/balances/%s",
+		wallet,
+		&response,
+		&response.Code,
+		ctx,
+	)
+
+	return utils.Map(response.Balances, func(amount types.ResponseAmount) types.Amount {
+		return amount.ToAmount()
+	}), &info, err
+}
+
 func (rpc *RPC) GetWalletDelegations(
 	wallet string,
 	ctx context.Context,

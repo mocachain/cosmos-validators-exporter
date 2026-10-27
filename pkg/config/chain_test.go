@@ -80,6 +80,23 @@ func TestChainValidateInvalidWallet(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestChainValidateDuplicateWallet(t *testing.T) {
+	t.Parallel()
+
+	chain := Chain{
+		Name:        "test",
+		LCDEndpoint: "test",
+		BaseDenom:   "denom",
+		Validators:  []Validator{{Address: "test"}},
+		Wallets: []Wallet{
+			{Address: "0xAbC0000000000000000000000000000000000001", Name: "first"},
+			{Address: "0xabc0000000000000000000000000000000000001", Name: "second"},
+		},
+	}
+	err := chain.Validate()
+	require.Error(t, err)
+}
+
 func TestChainValidateInvalidDenom(t *testing.T) {
 	t.Parallel()
 
