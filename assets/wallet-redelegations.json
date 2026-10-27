@@ -1,0 +1,38 @@
+{
+  "redelegation_responses": [
+    {
+      "redelegation": {
+        "delegator_address": "0x1000000000000000000000000000000000000001",
+        "validator_src_address": "0xA000000000000000000000000000000000000001",
+        "validator_dst_address": "0xB000000000000000000000000000000000000002",
+        "entries": [
+          {
+            "creation_height": "33632170",
+            "completion_time": "2026-11-16T05:12:03.104822375Z",
+            "initial_balance": "300000000000000000",
+            "shares_dst": "300000000000000000.000000000000000000",
+            "unbonding_id": "15",
+            "unbonding_on_hold_ref_count": "0"
+          }
+        ]
+      },
+      "entries": [
+        {
+          "redelegation_entry": {
+            "creation_height": "33632170",
+            "completion_time": "2026-11-16T05:12:03.104822375Z",
+            "initial_balance": "300000000000000000",
+            "shares_dst": "300000000000000000.000000000000000000",
+            "unbonding_id": "15",
+            "unbonding_on_hold_ref_count": "0"
+          },
+          "balance": "300000000000000000"
+        }
+      ]
+    }
+  ],
+  "pagination": {
+    "next_key": null,
+    "total": "1"
+  }
+}

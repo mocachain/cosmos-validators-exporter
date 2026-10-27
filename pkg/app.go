@@ -95,6 +95,7 @@ func NewApp(configPath string, filesystem fs.FS, version string) *App {
 		fetchersPkg.NewConsumerCommissionFetcher(logger, appConfig.Chains, rpcs, tracer),
 		fetchersPkg.NewInflationFetcher(logger, appConfig.Chains, rpcs, tracer),
 		fetchersPkg.NewSupplyFetcher(logger, appConfig.Chains, rpcs, tracer),
+		fetchersPkg.NewWalletsFetcher(logger, appConfig.Chains, rpcs, tracer),
 	}
 
 	generators := []generatorsPkg.Generator{
@@ -121,6 +122,7 @@ func NewApp(configPath string, filesystem fs.FS, version string) *App {
 		generatorsPkg.NewValidatorCommissionRateGenerator(appConfig.Chains, logger),
 		generatorsPkg.NewInflationGenerator(),
 		generatorsPkg.NewSupplyGenerator(appConfig.Chains),
+		generatorsPkg.NewWalletsGenerator(appConfig.Chains),
 	}
 
 	controller := controllerPkg.NewController(fetchers, logger)

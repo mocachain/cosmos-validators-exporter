@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/guregu/null/v5"
 )
@@ -14,6 +15,7 @@ type Chain struct {
 	Denoms           DenomInfos  `toml:"denoms"`
 	BechWalletPrefix string      `toml:"bech-wallet-prefix"`
 	Validators       []Validator `toml:"validators"`
+	Wallets          []Wallet    `toml:"wallets"`
 	Queries          Queries     `toml:"queries"`
 	IsProvider       null.Bool   `toml:"is-provider"`
 
@@ -54,6 +56,23 @@ func (c *Chain) Validate() error {
 		if err != nil {
 			return fmt.Errorf("error in validator #%d: %s", index, err)
 		}
+	}
+
+	// A wallet listed twice would export its series twice, under two names.
+	addresses := map[string]bool{}
+
+	for index, wallet := range c.Wallets {
+		err := wallet.Validate()
+		if err != nil {
+			return fmt.Errorf("error in wallet #%d: %s", index, err)
+		}
+
+		address := strings.ToLower(wallet.Address)
+		if addresses[address] {
+			return fmt.Errorf("error in wallet #%d: %s is listed twice", index, wallet.Address)
+		}
+
+		addresses[address] = true
 	}
 
 	for index, denomInfo := range c.Denoms {

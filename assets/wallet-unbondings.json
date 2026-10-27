@@ -1,0 +1,30 @@
+{
+  "unbonding_responses": [
+    {
+      "delegator_address": "0x1000000000000000000000000000000000000001",
+      "validator_address": "0xA000000000000000000000000000000000000001",
+      "entries": [
+        {
+          "creation_height": "33632150",
+          "completion_time": "2026-11-16T05:11:40.386385670Z",
+          "initial_balance": "400000000000000000",
+          "balance": "400000000000000000",
+          "unbonding_id": "13",
+          "unbonding_on_hold_ref_count": "0"
+        },
+        {
+          "creation_height": "33632164",
+          "completion_time": "2026-11-16T05:11:56.198601731Z",
+          "initial_balance": "400000000000000000",
+          "balance": "400000000000000000",
+          "unbonding_id": "14",
+          "unbonding_on_hold_ref_count": "0"
+        }
+      ]
+    }
+  ],
+  "pagination": {
+    "next_key": null,
+    "total": "1"
+  }
+}

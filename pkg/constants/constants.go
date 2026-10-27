@@ -24,10 +24,15 @@ const (
 	FetcherNameNodeInfo           FetcherName = "node_info"
 	FetcherNameInflation          FetcherName = "inflation"
 	FetcherNameSupply             FetcherName = "supply"
+	FetcherNameWallets            FetcherName = "wallets"
 	FetcherNameStub1              FetcherName = "stub1"
 	FetcherNameStub2              FetcherName = "stub2"
 
 	MetricsPrefix string = "cosmos_validators_exporter_"
+
+	// WalletMetricsPrefix keeps the names cosmos-exporter served on
+	// /metrics/wallet, so dashboards built for it work unchanged.
+	WalletMetricsPrefix string = "cosmos_wallet_"
 
 	ValidatorStatusBonded = "BOND_STATUS_BONDED"
 

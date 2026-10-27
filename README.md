@@ -13,6 +13,11 @@ You can use it for building a validator(s) dashboard(s) to visualize your valida
 (like total staked amount, delegators count, etc.) as well as building alerts for your validators' metrics
 (like validator status/ranking/total staked amount/etc.)
 
+It can also track other wallets: their balance, delegations, unbondings, redelegations and
+unclaimed rewards. These come as `cosmos_wallet_*` metrics with cosmos-exporter's names and labels,
+plus an optional `name` label. Their `chain_id` label holds the chain's `name` from the config.
+See `wallets` in `config.example.toml`.
+
 Here's an example of the dashboard we're using in production:
 
 ![Validators dashboard](https://raw.githubusercontent.com/QuokkaStake/cosmos-validators-exporter/master/images/01.png)
@@ -108,7 +113,8 @@ Then restart Prometheus and you're good to go!
 This is due to some requests taking a lot of time, and with a shorter timeout there's a chance
 the whole scrape request will time out. If you face scrape errors, consider increasing the timeout.*
 
-All the metrics provided by cosmos-validators-exporter have the `cosmos_validators_exporter_` as a prefix.
+All the metrics provided by cosmos-validators-exporter have the `cosmos_validators_exporter_` as a prefix,
+except the `cosmos_wallet_*` metrics for tracked wallets.
 For the full list of metrics, try running `curl localhost:9560/metrics` (or your host/port, if it's non-standard)
 and see the list of metrics there.
 

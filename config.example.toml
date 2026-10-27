@@ -65,6 +65,16 @@ bech-wallet-prefix = "cosmos"
 validators = [
     { address = "cosmosvaloper1xqz9pemz5e5zycaa89kys5aw6m8rhgsvw4328e", consensus-address = "cosmosvalcons1rt4g447zhv6jcqwdl447y88guwm0eevnrelgzc" }
 ]
+# List of other wallets to track, such as a relayer's or a hot wallet. Optional.
+# Address is required. Name is optional and goes into the "name" label.
+# Each wallet gets cosmos_wallet_balance, cosmos_wallet_delegations, cosmos_wallet_unbondings,
+# cosmos_wallet_redelegations and cosmos_wallet_rewards, with the names and labels
+# cosmos-exporter served on /metrics/wallet, so dashboards built for it keep working.
+# The chain's name goes into the "chain_id" label. A wallet with no coins reports a balance
+# of 0 in the base denom. An address can be listed once.
+wallets = [
+    { address = "cosmos1xqz9pemz5e5zycaa89kys5aw6m8rhgsvtp9lt2", name = "validator wallet" }
+]
 # Set this to true for ICS provider chains (such as Cosmos Hub).
 # If true, it enabled querying provider's consumer chains, which will fail if ICS is not enabled
 # (so for all chains except Cosmos Hub basically).
@@ -95,6 +105,8 @@ commission = true
 rewards = true
 # Query for validator wallet balance
 balance = true
+# Query for tracked wallets' balances, delegations, unbondings, redelegations and rewards.
+wallets = true
 # Query for validator's consumer assigned key. Only used for ICS.
 # If disabled, then it'll be assumed that the validator is not using assigned keys.
 assigned-key = true

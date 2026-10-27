@@ -212,3 +212,54 @@ type SupplyResponse struct {
 	Code   int              `json:"code"`
 	Supply []ResponseAmount `json:"supply"`
 }
+
+type WalletDelegationsResponse struct {
+	Code                int                `json:"code"`
+	DelegationResponses []WalletDelegation `json:"delegation_responses"`
+}
+
+type WalletDelegation struct {
+	Delegation struct {
+		ValidatorAddress string `json:"validator_address"`
+	} `json:"delegation"`
+	Balance ResponseAmount `json:"balance"`
+}
+
+// BalanceEntry is an unbonding or redelegation entry. Its balance carries no
+// denom: it is in the chain's bond denom.
+type BalanceEntry struct {
+	Balance math.LegacyDec `json:"balance"`
+}
+
+type WalletUnbondingsResponse struct {
+	Code               int               `json:"code"`
+	UnbondingResponses []WalletUnbonding `json:"unbonding_responses"`
+}
+
+type WalletUnbonding struct {
+	ValidatorAddress string         `json:"validator_address"`
+	Entries          []BalanceEntry `json:"entries"`
+}
+
+type WalletRedelegationsResponse struct {
+	Code                  int                  `json:"code"`
+	RedelegationResponses []WalletRedelegation `json:"redelegation_responses"`
+}
+
+type WalletRedelegation struct {
+	Redelegation struct {
+		ValidatorSrcAddress string `json:"validator_src_address"`
+		ValidatorDstAddress string `json:"validator_dst_address"`
+	} `json:"redelegation"`
+	Entries []BalanceEntry `json:"entries"`
+}
+
+type WalletRewardsResponse struct {
+	Code    int            `json:"code"`
+	Rewards []WalletReward `json:"rewards"`
+}
+
+type WalletReward struct {
+	ValidatorAddress string           `json:"validator_address"`
+	Reward           []ResponseAmount `json:"reward"`
+}
