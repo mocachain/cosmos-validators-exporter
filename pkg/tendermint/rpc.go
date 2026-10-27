@@ -372,6 +372,81 @@ func (rpc *RPC) GetWalletBalance(
 	}), &info, nil
 }
 
+// GetWalletDelegations, GetWalletUnbondings, GetWalletRedelegations and
+// GetWalletRewards serve WalletsFetcher, which skips chains whose "wallets"
+// query is disabled. They read the first page of up to 100 entries.
+func (rpc *RPC) GetWalletDelegations(
+	wallet string,
+	ctx context.Context,
+) ([]types.WalletDelegation, *types.QueryInfo, error) {
+	var response types.WalletDelegationsResponse
+
+	info, err := rpc.getWalletData(
+		"delegations",
+		"%s/cosmos/staking/v1beta1/delegations/%s",
+		wallet,
+		&response,
+		&response.Code,
+		ctx,
+	)
+
+	return response.DelegationResponses, &info, err
+}
+
+func (rpc *RPC) GetWalletUnbondings(
+	wallet string,
+	ctx context.Context,
+) ([]types.WalletUnbonding, *types.QueryInfo, error) {
+	var response types.WalletUnbondingsResponse
+
+	info, err := rpc.getWalletData(
+		"unbondings",
+		"%s/cosmos/staking/v1beta1/delegators/%s/unbonding_delegations",
+		wallet,
+		&response,
+		&response.Code,
+		ctx,
+	)
+
+	return response.UnbondingResponses, &info, err
+}
+
+func (rpc *RPC) GetWalletRedelegations(
+	wallet string,
+	ctx context.Context,
+) ([]types.WalletRedelegation, *types.QueryInfo, error) {
+	var response types.WalletRedelegationsResponse
+
+	info, err := rpc.getWalletData(
+		"redelegations",
+		"%s/cosmos/staking/v1beta1/delegators/%s/redelegations",
+		wallet,
+		&response,
+		&response.Code,
+		ctx,
+	)
+
+	return response.RedelegationResponses, &info, err
+}
+
+func (rpc *RPC) GetWalletRewards(
+	wallet string,
+	ctx context.Context,
+) ([]types.WalletReward, *types.QueryInfo, error) {
+	var response types.WalletRewardsResponse
+
+	info, err := rpc.getWalletData(
+		"rewards",
+		"%s/cosmos/distribution/v1beta1/delegators/%s/rewards",
+		wallet,
+		&response,
+		&response.Code,
+		ctx,
+	)
+
+	return response.Rewards, &info, err
+}
+
 func (rpc *RPC) GetConsumerAssignedKey(
 	valcons string,
 	consumerID string,
@@ -691,4 +766,34 @@ func (rpc *RPC) Get(
 		Msg("Got response at height")
 
 	return info, err
+}
+
+// getWalletData decodes a wallet's endpoint into target. code points at
+// target's response code.
+func (rpc *RPC) getWalletData(
+	what string,
+	urlFormat string,
+	wallet string,
+	target any,
+	code *int,
+	ctx context.Context,
+) (types.QueryInfo, error) {
+	childQuerierCtx, span := rpc.Tracer.Start(
+		ctx,
+		"Fetching wallet "+what,
+		trace.WithAttributes(attribute.String("wallet", wallet)),
+	)
+	defer span.End()
+
+	info, err := rpc.Get(fmt.Sprintf(urlFormat, rpc.ChainHost, wallet), target, childQuerierCtx)
+	if err != nil {
+		return info, err
+	}
+
+	if *code != 0 {
+		info.Success = false
+		return info, fmt.Errorf("expected code 0, but got %d", *code)
+	}
+
+	return info, nil
 }

@@ -13,6 +13,10 @@ You can use it for building a validator(s) dashboard(s) to visualize your valida
 (like total staked amount, delegators count, etc.) as well as building alerts for your validators' metrics
 (like validator status/ranking/total staked amount/etc.)
 
+It can also track other wallets: their balance, delegations, unbondings, redelegations and
+unclaimed rewards. These come as `cosmos_wallet_*` metrics with cosmos-exporter's names and labels.
+See `wallets` in `config.example.toml`.
+
 Here's an example of the dashboard we're using in production:
 
 ![Validators dashboard](https://raw.githubusercontent.com/QuokkaStake/cosmos-validators-exporter/master/images/01.png)

@@ -66,6 +66,20 @@ func TestChainValidateInvalidValidator(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestChainValidateInvalidWallet(t *testing.T) {
+	t.Parallel()
+
+	chain := Chain{
+		Name:        "test",
+		LCDEndpoint: "test",
+		BaseDenom:   "denom",
+		Validators:  []Validator{{Address: "test"}},
+		Wallets:     []Wallet{{}},
+	}
+	err := chain.Validate()
+	require.Error(t, err)
+}
+
 func TestChainValidateInvalidDenom(t *testing.T) {
 	t.Parallel()
 

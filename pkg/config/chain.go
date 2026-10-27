@@ -14,6 +14,7 @@ type Chain struct {
 	Denoms           DenomInfos  `toml:"denoms"`
 	BechWalletPrefix string      `toml:"bech-wallet-prefix"`
 	Validators       []Validator `toml:"validators"`
+	Wallets          []Wallet    `toml:"wallets"`
 	Queries          Queries     `toml:"queries"`
 	IsProvider       null.Bool   `toml:"is-provider"`
 
@@ -53,6 +54,13 @@ func (c *Chain) Validate() error {
 		err := validator.Validate()
 		if err != nil {
 			return fmt.Errorf("error in validator #%d: %s", index, err)
+		}
+	}
+
+	for index, wallet := range c.Wallets {
+		err := wallet.Validate()
+		if err != nil {
+			return fmt.Errorf("error in wallet #%d: %s", index, err)
 		}
 	}
 
